@@ -1,6 +1,5 @@
 using PromoCodeFactory.Core.Abstractions.Repositories;
 using PromoCodeFactory.Core.Domain;
-using PromoCodeFactory.Core.Domain.Administration;
 using PromoCodeFactory.Core.Exceptions;
 using System.Collections.Concurrent;
 
@@ -37,22 +36,13 @@ public class InMemoryRepository<T> : IRepository<T> where T : BaseEntity
     /// <param name="ct">Токен отмены операции.</param>
     /// <returns>Сущность с указанным идентификатором или <c>null</c>, если сущность не найдена.</returns>
     /// <exception cref="InvalidOperationException">Возникает при ошибке во время получения сущности.</exception>
-    public async Task<T?> GetById(Guid id, CancellationToken ct)
+    public Task<T?> GetById(Guid id, CancellationToken ct)
     {
-        try
-        {
-            return await Task.Run(() =>
-            {
-                ct.ThrowIfCancellationRequested();
+        ct.ThrowIfCancellationRequested();
 
-                return _data.FirstOrDefault(f => f.Key == id).Value;
-            },
-            ct);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(ex.Message, ex);
-        }
+        _data.TryGetValue(id, out var entity);
+
+        return Task.FromResult(entity);
     }
 
     /// <summary>
@@ -60,34 +50,36 @@ public class InMemoryRepository<T> : IRepository<T> where T : BaseEntity
     /// </summary>
     /// <param name="entity">Добавляемая сущность.</param>
     /// <param name="ct">Токен отмены операции.</param>
-    public async Task Add(T entity, CancellationToken ct)
+    public Task Add(T entity, CancellationToken ct)
     {
-        await Task.Run(() =>
-        {
-            _data.TryAdd(entity.Id, entity);
-        }, ct);
+        ArgumentNullException.ThrowIfNull(entity);
+        ct.ThrowIfCancellationRequested();
+
+        return !_data.TryAdd(entity.Id, entity)
+            ? throw new InvalidOperationException($"{typeof(T).Name} with Id '{entity.Id}' already exists.")
+            : Task.CompletedTask;
     }
 
     /// <summary>
-    /// Обновляет существующую сущность в репозитории. Если сущность не существует, она добавляется.
+    /// Обновляет существующую сущность в репозитории.
     /// </summary>
     /// <param name="entity">Обновляемый объект.</param>
     /// <param name="ct">Токен отмены операции.</param>
-    public async Task Update(T entity, CancellationToken ct)
+    /// <exception cref="EntityNotFoundException">Возникает, если сущность с указанным идентификатором не найдена.</exception>
+    /// <exception cref="InvalidOperationException">Возникает, если не удалось обновить сущность.</exception>
+    public Task Update(T entity, CancellationToken ct)
     {
-        await Task.Run(() =>
-        {
-            var existing = _data.FirstOrDefault(f => f.Key == entity.Id).Value;
+        ArgumentNullException.ThrowIfNull(entity);
+        ct.ThrowIfCancellationRequested();
 
-            if (existing is null)
-            {
-                _data.TryAdd(entity.Id, entity);
-            }
-            else
-            {
-                _data.TryUpdate(entity.Id, entity, existing);
-            }
-        }, ct);
+        if (!_data.TryGetValue(entity.Id, out var existing))
+        {
+            throw new EntityNotFoundException(typeof(T), entity.Id);
+        }
+
+        return !_data.TryUpdate(entity.Id, entity, existing)
+            ? throw new InvalidOperationException($"Failed to update {typeof(T).Name} with Id '{entity.Id}'.")
+            : Task.CompletedTask;
     }
 
     /// <summary>
@@ -95,19 +87,14 @@ public class InMemoryRepository<T> : IRepository<T> where T : BaseEntity
     /// </summary>
     /// <param name="id">Идентификатор удаляемой сущности.</param>
     /// <param name="ct">Токен отмены операции.</param>
-    public async Task Delete(Guid id, CancellationToken ct)
+    /// <exception cref="EntityNotFoundException">Возникает, если сущность с указанным идентификатором не найдена.</exception>
+    public Task Delete(Guid id, CancellationToken ct)
     {
-        await Task.Run(() =>
-        {
-            if (_data.TryRemove(id, out _))
-            {
-                return;
-            }
-            else
-            {
-                throw new EntityNotFoundException(typeof(Employee), id);
-            }
-        }, ct);
+        ct.ThrowIfCancellationRequested();
+
+        return !_data.TryRemove(id, out _)
+            ? throw new EntityNotFoundException(typeof(T), id)
+            : Task.CompletedTask;
     }
 
 }
