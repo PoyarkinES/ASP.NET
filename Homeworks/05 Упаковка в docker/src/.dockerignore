@@ -1,0 +1,21 @@
+# SQLite база данных (создаётся приложением в контейнере)
+**/*.sqlite
+**/*.sqlite-shm
+**/*.sqlite-wal
+
+# Артефакты сборки
+**/bin
+**/obj
+
+# Служебные файлы git, IDE и docker
+**/.git
+**/.gitignore
+**/.vs
+**/.idea
+**/.vscode
+**/*.user
+**/*.rsuser
+**/*.suo
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*
