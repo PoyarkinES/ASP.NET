@@ -1,0 +1,17 @@
+# Runs the image published by .github/workflows/ci.yml.
+# Image: ghcr.io/<owner>/<repo>/promocode-factory-api:latest
+services:
+  promocode-factory-api:
+    image: ${PROMOCODE_FACTORY_IMAGE:-ghcr.io/poyarkines/asp.net/promocode-factory-api:latest}
+    container_name: 'promocode-factory-api'
+    restart: always
+    ports:
+      - "8091:8080"
+    volumes:
+      - db:/app/db
+    environment:
+      - "ConnectionStrings:PromocodeFactoryDb=Filename=/app/db/PromoCodeFactoryDb.sqlite"
+      - "ASPNETCORE_ENVIRONMENT=Development"
+
+volumes:
+  db:

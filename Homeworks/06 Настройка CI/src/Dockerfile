@@ -3,8 +3,15 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY . .
-RUN dotnet restore
-RUN dotnet build -c $BUILD_CONFIGURATION --no-restore
+RUN dotnet restore PromoCodeFactory.slnx
+RUN dotnet build PromoCodeFactory.slnx -c $BUILD_CONFIGURATION --no-restore
+
+# Test stage: runs the unit tests. The build fails if any test fails.
+FROM build AS test
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet test PromoCodeFactory.UnitTests/PromoCodeFactory.UnitTests.csproj \
+    -c $BUILD_CONFIGURATION --no-build \
+    --logger "trx;LogFileName=test-results.trx" --results-directory /src/TestResults
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
