@@ -13,7 +13,7 @@ RUN dotnet test PromoCodeFactory.UnitTests/PromoCodeFactory.UnitTests.csproj \
     -c $BUILD_CONFIGURATION --no-build \
     --logger "trx;LogFileName=test-results.trx" --results-directory /src/TestResults
 
-FROM build AS publish
+FROM test AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish ./PromoCodeFactory.WebHost/PromoCodeFactory.WebHost.csproj \
     -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-build
