@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ env.REGISTRY }}/${{ github.repository }}/promocode-factory-api
   SRC_DIR: Homeworks/06 Настройка CI/src
 
 jobs:
@@ -22,6 +21,10 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=${REGISTRY}/${GITHUB_REPOSITORY,,}/promocode-factory-api" >> "$GITHUB_ENV"
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
